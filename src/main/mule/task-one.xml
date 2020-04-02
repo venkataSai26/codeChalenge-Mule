@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="imp-task1" doc:id="20b1dee7-42aa-4fd0-8f30-acfd9470d914" >
+		<set-payload value='#[payload.employee.first_name ++ " " ++ payload.employee.last_name  ++  " employee profile is created in HRMS System"]' doc:name="Set String Payload" doc:id="3abbd1f7-9a69-4e5b-908d-167881ac8bfb" />
+		<ee:transform doc:name="Call Lookup Flow" doc:id="fb3e868f-10ba-42c9-a9cd-ec7b38bbab17" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+lookup('task2LookUpFlow', payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	
+	
+	
+</mule>
