@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<flow name="task1" doc:id="ce66ed07-2f77-4688-8dba-ede9c9de24bc" >
+		<set-payload value='#[payload.employee.first_name ++ " " ++ payload.employee.last_name  ++  " employee profile is created in HRMS System"]' doc:name="Set Payload" doc:id="9cfcb363-dfa0-47c4-9f8a-339405e2a3cd" />
+		<ee:transform doc:name="call task2 flow" doc:id="05c2c64b-1985-40e6-8a60-b717c92aa679">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+lookup('task2', payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	
+</flow>
+	<flow name="task2" doc:id="1588b079-56cf-4cbe-98ca-e6c475680357" >
+		<set-payload value='#[payload]' doc:name="Set Response Payload" doc:id="b58ef827-e942-40ff-af85-c7e232b66375" />
+		<logger level="INFO" doc:name="Log Payload" doc:id="875f0833-fc57-494d-8f15-e6649b5ba481" message="########################## LookUp Flow Payload  :: #[payload] ##################################"/>
+	</flow>
+	<flow name="task3" doc:id="8cdd8842-e4b1-4ba3-aeba-2df2380e35d1" >
+		<ee:transform doc:name="global function call" doc:id="652bcf6f-fd3a-4992-ae7d-78fca4e6f37a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+import dwl::reUseableFunction as call
+output application/json
+---
+call::camelCaseFunction("Jan_Doe_employee_profile_is_created_in_HRMS_System")
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+
+	</flow>
+	<flow name="task-4.1" doc:id="3759029f-1105-44da-9027-0cb10fbe5f2e" >
+		<scheduler doc:name="Scheduler" doc:id="72cc53ca-83c5-419e-a0e1-9f39b224bcf9" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="5" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<ee:transform doc:name="Set employee Payload and scoreBoard variables" doc:id="501acd7d-c42c-4241-a9ed-fbdf252de629">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "employee":[
+      {
+         "id":"A007",
+         "first_name":"Jan",
+         "last_name":"Doe"
+      },
+      {
+         "id":"A008",
+         "first_name":"Ron",
+         "last_name":"David"
+      },
+      {
+         "id":"A009",
+         "first_name":"Jane",
+         "last_name":"Kane"
+      },
+      {
+         "id":"A010",
+         "first_name":"Marsh",
+         "last_name":"Megan"
+      },
+      {
+         "id":"A011",
+         "first_name":"Kelly",
+         "last_name":"Mitch"
+      },
+      {
+         "id":"A012",
+         "first_name":"Chris",
+         "last_name":"Vaste"
+      }
+   ]
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="scoreBoard"><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "scoreBoard":[
+      {
+         "id":"A007",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            80,
+            75,
+            89,
+            100
+         ]
+      },
+      {
+         "id":"A008",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            70,
+            85,
+            69,
+            90
+         ]
+      },
+      {
+         "id":" A021",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            90,
+            87,
+            77,
+            95
+         ]
+      }
+   ]
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Logic to get certificate list" doc:id="791958b1-a26d-4742-8f30-b90a708a4c44">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var inputPayload = payload.employee
+var scoreBoardList = vars.scoreBoard.scoreBoard
+---
+certificate : flatten (scoreBoardList map (score, scoreIndex) -> 	
+     inputPayload filter $.id == score.id map {
+     	"id": $.id,
+         "firstName": $.first_name,
+         "LastName": $.last_name,
+         "MarksBySubjectWise": (score.subjects map (sub, index) ->
+            (score.subjects[index]) : score.score[index]) reduce($$ ++ $)             
+})
+     
+    ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log Payload" doc:id="10cce4e8-d6e1-4d4b-b2d9-5e3e4575ef25" message=" Task 4.1 FINAL OUTPUT Log :: #[payload] "/>
+		<flow-ref doc:name="task4.2" doc:id="6e5b51d1-2bec-40a2-a834-d8738d203c97" name="task4.2"/>
+	
+</flow>
+<flow name="task4.2" doc:id="209785ae-bd31-41f4-bac9-ab66a74792b5" >
+		<ee:transform doc:name="Set employee Payload and scoreBoard Vars" doc:id="a2708d08-1f61-4725-b2ae-f523d0d377d4">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "employee":[
+      {
+         "id":"A007",
+         "first_name":"Jan",
+         "last_name":"Doe"
+      },
+      {
+         "id":"A008",
+         "first_name":"Ron",
+         "l ast_name":"David"
+      },
+      {
+         "id":"A009",
+         "first_name":"Jane",
+         "last_name":"Kane"
+      },
+      {
+         "id":"A010",
+         "first_name":"Marsh",
+         "last_name":"Megan"
+      },
+      {
+         "id":"A011",
+         "first_name":"Kelly",
+         "last_name":"Mitch"
+      },
+      {
+         "id":"A012",
+         "first_name":"Chris",
+         "last_name":"Vaste"
+      }
+   ]
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="scoreBoard"><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "scoreBoard":[
+      {
+         "id":"A007",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            80,
+            75,
+            89,
+            100
+         ]
+      },
+      {
+         "id":"A008",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            70,
+            85,
+            69,
+            90
+         ]
+      },
+      {
+         "id":" A021",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            90,
+            87,
+            77,
+            95
+         ]
+      }
+   ]
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="bcfd8303-f6da-44d2-a854-b3107fbd305d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var inputPayload = payload.employee
+var scoreBoardList = vars.scoreBoard.scoreBoard
+---
+(inputPayload map (v) -> using (id = v.id) 
+{	id : id,
+	first_name: v.first_name,
+	last_name: v.last_name,
+	(scoreBoardList filter ($.id contains id) map (sv) -> {
+		subjects: sv.subjects,
+		score: sv.score
+	})
+}) filter $.subjects == null]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b4377c87-d045-4aeb-89ee-ad2f9d05c127" message="Task 4.2 OUTPUT Payload :: #[payload]"/>
+	
+	</flow>
+	<flow name="task5" doc:id="8828e512-b5c8-44c9-bfc4-eae6027ed528" >
+		<ee:transform doc:name="Transform Message" doc:id="b1ad84dd-69a3-44ac-9e06-5ea820d39092" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+fun listInt(list:Array, maxSize:Number) = if(sizeOf(list) >= maxSize) list else listInt( list ++ [(sizeOf(list) + 1) as Number], maxSize)
+---
+listInt([], attributes.uriParams.number)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
+
